@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/watt_guard/watt_guard.iml" filepath="$PROJECT_DIR$/watt_guard/watt_guard.iml" />
+      <module fileurl="file://$PROJECT_DIR$/watt_guard/android/watt_guard_android.iml" filepath="$PROJECT_DIR$/watt_guard/android/watt_guard_android.iml" />
+    </modules>
+  </component>
+</project>
