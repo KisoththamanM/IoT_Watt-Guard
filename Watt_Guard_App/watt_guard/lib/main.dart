@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
 
 void main() {
   runApp(MaterialApp(debugShowCheckedModeBanner: false, home: MyApp()));
@@ -12,12 +14,75 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  late MqttServerClient client;
   bool isSafe = true;
   bool isSwitchOn = false;
+  String deviceStatus = "OFF";
   double current = 0;
   double voltage = 0;
   double power = 0;
   double ratedPower = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    connectMQTT();
+  }
+
+  Future<void> connectMQTT() async {
+    client = MqttServerClient('broker.hivemq.com', 'flutter_wattguard_app');
+
+    client.port = 1883;
+    client.keepAlivePeriod = 20;
+    client.onConnected = () => debugPrint("MQTT Connected");
+
+    await client.connect();
+
+    client.subscribe('iot/wattguard/relay', MqttQos.atMostOnce);
+
+    client.updates!.listen((events) {
+      //final recMess = events[0].payload as MqttPublishMessage;
+      //final payload = MqttPublishPayload.bytesToStringAsString(
+      //  recMess.payload.message,
+      //);
+
+      //final values = payload.split(',');
+
+      setState(() {});
+    });
+  }
+
+  void publishCommand(String cmd) {
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(cmd);
+
+    client.publishMessage(
+      'iot/wattguard/relay',
+      MqttQos.atMostOnce,
+      builder.payload!,
+    );
+
+    setState(() {
+      deviceStatus = cmd;
+    });
+  }
+
+  void toggleSwitch(bool value) {
+    final builder = MqttClientPayloadBuilder();
+    builder.addString(value ? "ON" : "OFF");
+
+    client.publishMessage(
+      'iot/wattguard/relay',
+      MqttQos.atMostOnce,
+      builder.payload!,
+    );
+
+    setState(() {
+      isSwitchOn = value;
+      deviceStatus = value ? "ON" : "OFF";
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
@@ -191,7 +256,7 @@ class _MyAppState extends State<MyApp> {
                           value: isSwitchOn,
                           onChanged: (value) {
                             setState(() {
-                              isSwitchOn = value;
+                              toggleSwitch(value);
                             });
                           },
                           activeThumbColor: Colors.black,
