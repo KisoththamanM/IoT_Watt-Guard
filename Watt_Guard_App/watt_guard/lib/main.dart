@@ -19,7 +19,7 @@ class _MyAppState extends State<MyApp> {
   bool isSwitchOn = false;
   String deviceStatus = "OFF";
   double current = 0;
-  double voltage = 0;
+  double voltage = 230;
   double power = 0;
   double ratedPower = 0;
 
@@ -30,7 +30,10 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> connectMQTT() async {
-    client = MqttServerClient('broker.hivemq.com', 'flutter_wattguard_app');
+    client = MqttServerClient(
+      'broker.hivemq.com',
+      'Flutter_WattGuard_${DateTime.now().millisecondsSinceEpoch}',
+    );
 
     client.port = 1883;
     client.keepAlivePeriod = 20;
@@ -38,17 +41,21 @@ class _MyAppState extends State<MyApp> {
 
     await client.connect();
 
-    client.subscribe('iot/wattguard/relay', MqttQos.atMostOnce);
+    client.subscribe('Wattguard/relay', MqttQos.atMostOnce);
+    client.subscribe('WattGuard/current', MqttQos.atMostOnce);
 
     client.updates!.listen((events) {
-      //final recMess = events[0].payload as MqttPublishMessage;
-      //final payload = MqttPublishPayload.bytesToStringAsString(
-      //  recMess.payload.message,
-      //);
+      final recMess = events[0].payload as MqttPublishMessage;
+      final topic = events[0].topic;
+      final payload = MqttPublishPayload.bytesToStringAsString(
+        recMess.payload.message,
+      );
 
-      //final values = payload.split(',');
-
-      setState(() {});
+      if (topic == 'WattGuard/current') {
+        setState(() {
+          current = double.tryParse(payload) ?? 0.0;
+        });
+      }
     });
   }
 
@@ -57,7 +64,7 @@ class _MyAppState extends State<MyApp> {
     builder.addString(cmd);
 
     client.publishMessage(
-      'iot/wattguard/relay',
+      'Wattguard/relay',
       MqttQos.atMostOnce,
       builder.payload!,
     );
@@ -71,11 +78,20 @@ class _MyAppState extends State<MyApp> {
     final builder = MqttClientPayloadBuilder();
     builder.addString(value ? "ON" : "OFF");
 
-    client.publishMessage(
-      'iot/wattguard/relay',
-      MqttQos.atMostOnce,
-      builder.payload!,
-    );
+    if (client.connectionStatus?.state == MqttConnectionState.connected) {
+      client.publishMessage(
+        'WattGuard/relay',
+        MqttQos.atMostOnce,
+        builder.payload!,
+      );
+
+      setState(() {
+        isSwitchOn = value;
+        deviceStatus = value ? "ON" : "OFF";
+      });
+    } else {
+      debugPrint("MQTT not connected yet");
+    }
 
     setState(() {
       isSwitchOn = value;
@@ -87,7 +103,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     double screenWidth = MediaQuery.of(context).size.width;
     power = voltage * current;
-    isSafe = ratedPower <= power;
+    isSafe = ratedPower >= power;
     return Scaffold(
       body: Container(
         height: double.maxFinite,
@@ -150,11 +166,11 @@ class _MyAppState extends State<MyApp> {
                             ),
                             child: Center(
                               child: Text(
-                                '$current A',
+                                '${current.toStringAsFixed(2)} A',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 50,
+                                  fontSize: 45,
                                   height: 1,
                                 ),
                               ),
@@ -173,11 +189,11 @@ class _MyAppState extends State<MyApp> {
                             ),
                             child: Center(
                               child: Text(
-                                '$power W',
+                                '${power.toStringAsFixed(2)} W',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 50,
+                                  fontSize: 45,
                                   height: 1,
                                 ),
                               ),
