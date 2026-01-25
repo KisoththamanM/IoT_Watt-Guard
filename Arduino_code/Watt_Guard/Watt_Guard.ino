@@ -17,6 +17,9 @@ PubSubClient client(espClient);
 unsigned long lastSendTime = 0;
 const unsigned long interval = 1000;
 
+//For proper calibration, current in the zero position should be found. 
+float zeroCurrent = 0;
+
 void setupWiFi(){
   WiFi.begin(ssid,password);
   while (WiFi.status()!= WL_CONNECTED){delay(500);}
@@ -49,6 +52,7 @@ void connectMQTT(){
 
 void setup(){
   Serial.begin(9600);
+
   pinMode(RELAY_PIN, OUTPUT);
   digitalWrite(RELAY_PIN, HIGH); // Relay OFF initially
 
@@ -58,10 +62,18 @@ void setup(){
   client.setCallback(mqttCallback);
 
   //ACS712 Calibration
-  Serial.println("Calibrating ACS712 at no load");
+  //To find zero current
+  Serial.println("Calibrating ACS712");
   delay(2000);
-  currentSensor.autoMidPoint();
+  float sum = 0;
+  for(int i = 0; i<200; i++){
+    sum += currentSensor.mA_AC();
+    delay(5);
+  }
+  zeroCurrent = sum/200.0;
   Serial.println("Calibration done!");
+  Serial.print("Zero offset (mA): ");
+  Serial.println(zeroCurrent);
 }
 
 void loop() {
@@ -73,7 +85,8 @@ void loop() {
   unsigned long now = millis();
   if(now - lastSendTime >= interval){
     lastSendTime = now;
-    float current = currentSensor.mA_AC()/1000.0;
+    float current_mA = currentSensor.mA_AC() - zeroCurrent;
+    float current = current_mA/1000.0;
     
     //Checking serial print
     Serial.print("Current: ");
