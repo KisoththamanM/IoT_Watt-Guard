@@ -21,7 +21,7 @@ class _MyAppState extends State<MyApp> {
   double current = 0;
   double voltage = 230;
   double power = 0;
-  double ratedPower = 0;
+  double ratedPower = 250;
 
   @override
   void initState() {
@@ -170,7 +170,7 @@ class _MyAppState extends State<MyApp> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 45,
+                                  fontSize: 40,
                                   height: 1,
                                 ),
                               ),
@@ -193,7 +193,7 @@ class _MyAppState extends State<MyApp> {
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 45,
+                                  fontSize: 40,
                                   height: 1,
                                 ),
                               ),
@@ -209,11 +209,11 @@ class _MyAppState extends State<MyApp> {
                         ),
                         child: Center(
                           child: Text(
-                            'Status',
+                            isSafe ? '😀' : '😱',
                             style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 50,
+                              fontSize: 80,
                               height: 1,
                             ),
                           ),
