@@ -66,7 +66,7 @@ void setup(){
   Serial.println("Calibrating ACS712");
   delay(2000);
   float sum = 0;
-  for(int i = 0; i<200; i++){
+  for(int i = 0; i<150; i++){
     sum += currentSensor.mA_AC();
     delay(5);
   }
@@ -86,6 +86,12 @@ void loop() {
   if(now - lastSendTime >= interval){
     lastSendTime = now;
     float current_mA = currentSensor.mA_AC() - zeroCurrent;
+
+    //ignore noise
+    if (current_mA < 150) {
+      current_mA = 0;
+    }
+
     float current = current_mA/1000.0;
     
     //Checking serial print
